@@ -43,9 +43,17 @@
     methods: {
       async onUpload() {
         if (!this.file) return;
-        const chunks = this.splitFileChunks();
         const hash = await this.calculateHashSample();
         this.hash = hash;
+        const { data: { uploaded, uploadedList } } = await this.$http.post('/checkFile', {
+          hash,
+          type: this.file.name.split('.').pop()
+        });
+        if (uploaded) {
+          this.$message.success('秒传成功');
+          return;
+        }
+        const chunks = this.splitFileChunks();
         console.log('计算hash===', hash);
         this.chunks = chunks.map((chunk, index) => {
           const name = hash + '-' + index;
@@ -54,10 +62,10 @@
             name,
             index,
             chunk: chunk.file,
-            percent: 0
+            percent: uploadedList.indexOf(name) > -1 ? 100 : 0
           }
         })
-        this.uploadChunks([]);
+        this.uploadChunks(uploadedList || []);
       },
       // 抽样计算文件hash
       async calculateHashSample() {
