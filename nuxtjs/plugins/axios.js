@@ -3,7 +3,7 @@ import axios from 'axios';
 import { MessageBox } from 'element-ui';
 
 let service = axios.create({
-  timeout: 30000,
+  timeout: 60000,
   baseURL: 'api/'
 });
 
@@ -20,10 +20,8 @@ export default({ store, redirect }) => {
     return Promise.reject(err);
   })
   service.interceptors.response.use(response => {
-    console.log('=====.', response)
     const { data, config } = response;
     if (data.code === 0) {
-      console.log(config)
       if (config.url === '/user/login') {
         localStorage.setItem(TOKEN_KEY, data.data.token);
       }
