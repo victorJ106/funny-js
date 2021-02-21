@@ -6,7 +6,7 @@
     </div>
     <el-progress :stroke-width="20" :text-inside="true" :percentage="uploadProgress"
       style="margin: 10px 0;"></el-progress>
-    <el-button @click="onUpload" type="primary">上传</el-button>
+    <el-button @click="onUpload" type="primary">上传<i class="el-icon-loading"></i></el-button>
     <div class="upload-list-wrapper" :style="{'width': cubWidth + 'px'}">
       <div class="cube" v-for="chunk in chunks" :key="chunk.name">
         <div :class="{
@@ -24,7 +24,7 @@
 <script>
   import SparkMd5 from 'spark-md5';
 
-  const CHUNK_SIZE = 5*1024*1024;
+  const CHUNK_SIZE = 1*1024*1024;
   export default {
     name: 'upload',
     computed: {
@@ -111,15 +111,63 @@
             form.append('name', chunk.name)
             return { form, index: chunk.index, error: 0 };
           })
-          .map(({form, index}) => this.$http.post('/uploadFile', form, {
-            onUploadProgress: progress => {
-              console.log(progress)
-              this.chunks[index].percent = Number(((progress.loaded/progress.total)*100).toFixed(2));
-            }
-          }));
-          await Promise.all(requests);
-          await this.mergeRequest();
+          // .map(({form, index}) => this.$http.post('/uploadFile', form, {
+          //   onUploadProgress: progress => {
+          //     console.log(progress)
+          //     this.chunks[index].percent = Number(((progress.loaded/progress.total)*100).toFixed(2));
+          //   }
+          // }));
+          // await Promise.all(requests);
+          await this.sendRequest(requests);
+          // await this.mergeRequest();
+          this.$message.success('上传成功！');
       },
+      // 并发控制，每次只发出3次请求
+      async sendRequest(requests, limit = 3) {
+        return new Promise((resolve, reject) => {
+          const len = requests.length;
+          let isStop = false;  // 是否停止请求
+          let count = 0;
+          const start = async () => {
+            const task = requests.shift();
+            if (!task || isStop) return;
+            const { form, index, error } = task;
+            try {
+              await this.$http.post('/uploadFile', form, {
+                onUploadProgress: progress => {
+                  this.chunks[index].percent = Number(((progress.loaded/progress.total)*100).toFixed(2));
+                }
+              })
+
+              if (count === len -1) {
+                resolve();
+              } else {
+                count++;
+                start();
+              }
+            } catch(err) {
+              console.log(err);
+              this.chunks[index].percent = -1;
+              // 请求发生错误时，重新上传chunk
+              // 最多连续三次请求错误，超出3次停止上传
+              if (error < 3) {
+                task.error++;
+                requests.unshift(task);  // 把任务放回任务列表，重新开始任务
+                start();
+              } else {
+                isStop = true;
+                reject();
+              }
+            }
+          }
+
+          while (limit > 0) {
+            start();
+            limit--;
+          }
+        })
+      },
+      // 文件切片
       splitFileChunks() {
         let chunks = [];
         let sum = 0;
@@ -194,7 +242,7 @@
         width: 30px;
         line-height: 30px;
         text-align: center;
-        border: 1px solid #ccc;
+        border: 1px solid #000;
         background: #ccc;
         .uploading  {
           background: #409EFF;
