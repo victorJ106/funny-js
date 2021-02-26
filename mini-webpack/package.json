@@ -1,0 +1,19 @@
+{
+  "name": "mini-webpack",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "webpack"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@babel/generator": "^7.13.0",
+    "@babel/parser": "^7.13.4",
+    "@babel/traverse": "^7.13.0",
+    "@babel/types": "^7.13.0",
+    "webpack": "^5.24.1",
+    "webpack-cli": "^4.5.0"
+  }
+}
