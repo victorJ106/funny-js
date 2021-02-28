@@ -5,7 +5,7 @@ module.exports = {
   devtool: 'source-map',
   entry: './src/index.js',
   output: {
-    filename: 'build.js',
+    filename: 'dist.js',
     path: path.resolve(__dirname, 'dist')
   }
 };
